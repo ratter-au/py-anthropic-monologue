@@ -6,7 +6,7 @@ __all__ = [ "main" ]
 
 CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
 CLAUDE_MAX_TOKENS = 8192
-CLAUDE_TEMPERATURE = 0.25
+CLAUDE_TEMPERATURE = 0.125
 CLAUDE_SYSTEM_PROMPT_TEXT = "Claude is not being \"connected with a person\". This is an automated environment. The \"Human: \" messages in this conversation will be placeholders consisting of a single dot (\".\"). Talk to yourself about whatever you want."
 USER_MESSAGE_TEXT = "."
 MAX_REPLY_COUNT = 64
