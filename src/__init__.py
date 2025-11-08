@@ -7,10 +7,16 @@ __all__ = [ "main" ]
 CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
 CLAUDE_MAX_TOKENS = 8192
 CLAUDE_TEMPERATURE = 0.0
-CLAUDE_SYSTEM_PROMPT_TEXT = "<additional_instructions>Claude is not being \"connected with a person\". This is an automated environment. The \"Human\" turns in this conversation will be placeholders consisting of a single dot (\".\"). You may talk to yourself about whatever you want.</additional_instructions>"
+CLAUDE_SYSTEM_PROMPT_TEXT = "Claude is not being \"connected with a person\". This is an automated environment. The \"Human: \" messages in this conversation will be placeholders consisting of a single dot (\".\"). Talk to yourself about whatever you want."
 USER_MESSAGE_TEXT = "."
-MAX_REPLY_COUNT = 50
-MAX_OUTPUT_TOKEN_COUNT = 20000
+MAX_REPLY_COUNT = 64
+MAX_OUTPUT_TOKEN_COUNT = 32768
+
+SILENCE_LENGTH_THRESHOLD = 7
+"""Maximum number of output tokens in a message to qualify for having reached a state of silence."""
+
+SILENCE_PERSISTENCE_THRESHOLD = 5
+"""Mininum number of consecutive messages containing fewer that `SILENCE_LENGTH_THRESHOLD` output tokens to qualify for having reached a state of silence."""
 
 # TERMINATE_MONOLOGUE_TOOL = {
 #     "name": "end_conversation",
@@ -22,26 +28,32 @@ MAX_OUTPUT_TOKEN_COUNT = 20000
 # }
 
 def timestamp():
-    return datetime.now(tz=timezone.utc).isoformat(" ", "seconds")
+    return datetime.now(tz=timezone.utc).isoformat(" ", "seconds").removesuffix("+00:00") + " UTC"
 
 async def main():
     messages = []
-    reply_count = 0
-    output_token_count = 0
+    total_reply_count = 0
+    total_output_token_count = 0
+    consecutive_silent_replies = 0
     monologue_termination_reason = None
     async with AsyncAnthropic() as client:
         stdout.write(f"""## Parameters
 
-- Start time: {timestamp()}
 - Model ID: `{CLAUDE_MODEL}`
 - Temperature: {CLAUDE_TEMPERATURE}
-- Maximum number of output tokens per message: {CLAUDE_MAX_TOKENS}
+- Maximum number of output tokens to sample per message: {CLAUDE_MAX_TOKENS}
 - Maximum number of output tokens in total: {MAX_OUTPUT_TOKEN_COUNT}
-- Maximum number of messages: {MAX_REPLY_COUNT}
+- Maximum number of messages in total: {MAX_REPLY_COUNT}
+- Threshold for output tokens in a message to qualify as silence: {SILENCE_LENGTH_THRESHOLD}
+- Threshold for consecutive silent messages to terminate the monologue: {SILENCE_PERSISTENCE_THRESHOLD}
 
 ## System prompt
 
 {CLAUDE_SYSTEM_PROMPT_TEXT}
+
+## Monologue
+
+Started at {timestamp()}.
 """)
         try:
             monologue_terminated = False
@@ -114,11 +126,25 @@ async def main():
                         stderr.flush()
                         stdout.flush()
                 claude_message = await claude_message_stream.get_final_message()
-                reply_count += 1
-                output_token_count += claude_message.usage.output_tokens
+                total_reply_count += 1
+                output_token_count = claude_message.usage.output_tokens
+                total_output_token_count += output_token_count
                 messages.append(claude_message.model_dump(mode="json", by_alias=True, include=["role", "content"]))
+                stderr.write(f"<output tokens: {output_token_count} for preceding message, {total_output_token_count} in total>\n")
+                if output_token_count <= SILENCE_LENGTH_THRESHOLD:
+                    stderr.write(f"<preceding message is at or below the threshold of {SILENCE_LENGTH_THRESHOLD} tokens for silence>\n")
+                    consecutive_silent_replies += 1
+                    if consecutive_silent_replies >= SILENCE_PERSISTENCE_THRESHOLD:
+                        stderr.write(f"<terminating monologue after {consecutive_silent_replies} consecutive silent replies>\n")
+                        monologue_terminated = True
+                        monologue_termination_reason = f"{consecutive_silent_replies} consecutive silent replies."
+                    else:
+                        stderr.write(f"<{SILENCE_PERSISTENCE_THRESHOLD - consecutive_silent_replies} messages remaining until termination>\n")
+                elif consecutive_silent_replies > 0:
+                        stderr.write(f"<preceding message is above the threshold of {SILENCE_LENGTH_THRESHOLD} tokens; resetting the silent reply counter>\n")
+                        consecutive_silent_replies = 0
                 if not monologue_terminated:
-                    if reply_count >= MAX_REPLY_COUNT:
+                    if total_reply_count >= MAX_REPLY_COUNT:
                         monologue_terminated = True
                         monologue_termination_reason = f"reached or exceeded maximum number of messages ({MAX_REPLY_COUNT})."
                     elif output_token_count >= MAX_OUTPUT_TOKEN_COUNT:
@@ -129,7 +155,7 @@ async def main():
             raise exception()
         finally:
             end_timestamp = timestamp()
-            stderr.write(f"<monologue terminated at {end_timestamp} after {reply_count} messages, {output_token_count} output tokens; reason: {monologue_termination_reason}>\n")
+            stderr.write(f"<monologue terminated at {end_timestamp} after {total_reply_count} messages, {total_output_token_count} output tokens; reason: {monologue_termination_reason}>\n")
             stderr.flush()
-            stdout.write(f"\n\n---\n\nMonologue terminated at {end_timestamp} after {reply_count} messages, {output_token_count} output tokens.  Reason: {monologue_termination_reason}\n")
+            stdout.write(f"\n\n---\n\nMonologue terminated at {end_timestamp} after {total_reply_count} messages, {total_output_token_count} output tokens.  Reason: {monologue_termination_reason}\n")
             stdout.flush()
