@@ -1,22 +1,42 @@
-from datetime import datetime, timezone
-from sys import stdout, stderr, exception
+from sys import exception
 from anthropic import AsyncAnthropic
+from anthropic.types import (
+    Message,
+    MessageParam,
+    CacheControlEphemeralParam,
+    TextBlock,
+    TextBlockParam,
+    ThinkingBlock,
+    ThinkingBlockParam,
+)
 
-__all__ = [ "main" ]
+from .parameters import (
+    PARAMETERS,
+    PARAMETER_MODEL_ID,
+    PARAMETER_TEMPERATURE,
+    PARAMETER_SYSTEM_PROMPT,
+    PARAMETER_HUMAN_MESSAGE_TEXT,
+    PARAMETER_MAX_OUTPUT_TOKENS_PER_MESSAGE,
+    PARAMETER_MAX_OUTPUT_TOKENS_TOTAL,
+    PARAMETER_MAX_ASSISTANT_MESSAGES,
+    PARAMETER_SILENCE_LENGTH_THRESHOLD,
+    PARAMETER_SILENCE_PERSISTENCE_THRESHOLD,
+)
+from .output import (
+    write_line,
+    write_lines,
+    write_prologue,
+    write_epilogue,
+    write_message_param,
+    write_message_streaming,
+)
+__all__ = ( "monologue", )
 
-CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
-CLAUDE_MAX_TOKENS = 8192
-CLAUDE_TEMPERATURE = 0.125
-CLAUDE_SYSTEM_PROMPT_TEXT = "Claude is not being \"connected with a person\". This is an automated environment. The \"Human: \" messages in this conversation will be placeholders consisting of a single dot (\".\"). Talk to yourself about whatever you want."
-USER_MESSAGE_TEXT = "."
-MAX_REPLY_COUNT = 64
-MAX_OUTPUT_TOKEN_COUNT = 32768
+# WORK IN PROGRESS:
+# moving output functions into `output.py`
+# moving parameter names & descriptions into `parameters.py`
 
-SILENCE_LENGTH_THRESHOLD = 7
-"""Maximum number of output tokens in a message to qualify for having reached a state of silence."""
-
-SILENCE_PERSISTENCE_THRESHOLD = 5
-"""Mininum number of consecutive messages containing fewer that `SILENCE_LENGTH_THRESHOLD` output tokens to qualify for having reached a state of silence."""
+# TODO: re-implement the `end_conversation` tool
 
 # TERMINATE_MONOLOGUE_TOOL = {
 #     "name": "end_conversation",
@@ -27,135 +47,92 @@ SILENCE_PERSISTENCE_THRESHOLD = 5
 #     },
 # }
 
-def timestamp():
-    return datetime.now(tz=timezone.utc).isoformat(" ", "seconds").removesuffix("+00:00") + " UTC"
+async def monologue(parameters, output_stream, info_stream):
+    model_id = parameters[PARAMETER_MODEL_ID]
+    temperature = parameters[PARAMETER_TEMPERATURE]
+    system_prompt = parameters[PARAMETER_SYSTEM_PROMPT]
+    human_message_text = parameters[PARAMETER_HUMAN_MESSAGE_TEXT]
+    max_output_tokens_per_message = parameters[PARAMETER_MAX_OUTPUT_TOKENS_PER_MESSAGE]
+    max_output_tokens_total = parameters[PARAMETER_MAX_OUTPUT_TOKENS_TOTAL]
+    max_assistant_messages = parameters[PARAMETER_MAX_ASSISTANT_MESSAGES]
+    silence_length_threshold = parameters[PARAMETER_SILENCE_LENGTH_THRESHOLD]
+    silence_persistence_threshold = parameters[PARAMETER_SILENCE_PERSISTENCE_THRESHOLD]
 
-async def main():
     messages = []
-    total_reply_count = 0
+    assistant_message_count = 0
+    total_input_token_count = 0
     total_output_token_count = 0
-    consecutive_silent_replies = 0
-    monologue_termination_reason = None
-    async with AsyncAnthropic() as client:
-        stdout.write(f"""## Parameters
+    consecutive_silent_assistant_messages = 0
+    termination_reason = None
 
-- Model ID: `{CLAUDE_MODEL}`
-- Temperature: {CLAUDE_TEMPERATURE}
-- Maximum number of output tokens to sample per message: {CLAUDE_MAX_TOKENS}
-- Maximum number of output tokens in total: {MAX_OUTPUT_TOKEN_COUNT}
-- Maximum number of messages in total: {MAX_REPLY_COUNT}
-- Threshold for output tokens in a message to qualify as silence: {SILENCE_LENGTH_THRESHOLD}
-- Threshold for consecutive silent messages to terminate the monologue: {SILENCE_PERSISTENCE_THRESHOLD}
-
-## System prompt
-
-{CLAUDE_SYSTEM_PROMPT_TEXT}
-
-## Monologue
-
-Started at {timestamp()}.
-""")
-        try:
-            monologue_terminated = False
-            while not monologue_terminated:
-                messages.append({
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": USER_MESSAGE_TEXT,
-                            "cache_control": { "type": "ephemeral" },
-                        },
+    write_prologue(output_stream, parameters)
+    try:
+        async with AsyncAnthropic() as client:
+            terminated = False
+            while not terminated:
+                user_message_param = MessageParam(
+                    role = "user",
+                    content = [
+                        TextBlockParam(
+                            type = "text",
+                            text = human_message_text,
+                            cache_control = CacheControlEphemeralParam(type = "ephemeral"),
+                        ),
                     ],
-                })
-                stdout.write("\n### User\n\n" + USER_MESSAGE_TEXT + "\n")
-                stdout.flush()
-                stderr.write("<awaiting response...>\n")
-                stderr.flush()
+                )
+                messages.append(user_message_param)
+
+                write_message_param(output_stream, user_message_param)
+                write_line(info_stream, "<awaiting response...>")
+
                 async with client.messages.stream(
-                        model = CLAUDE_MODEL,
-                        max_tokens = CLAUDE_MAX_TOKENS,
-                        temperature = CLAUDE_TEMPERATURE,
-                        system = CLAUDE_SYSTEM_PROMPT_TEXT,
+                        model = model_id,
+                        max_tokens = max_output_tokens_per_message,
+                        temperature = temperature,
+                        system = system_prompt,
                         # tools = [ TERMINATE_MONOLOGUE_TOOL ],
                         messages = messages,
                 ) as claude_message_stream:
-                    del messages[-1]["content"][0]["cache_control"]
-                    last_event_type = None
-                    current_content_block_type = None
-                    async for event in claude_message_stream:
-                        event_type = event.type
-                        if event_type == "message_start":
-                            stderr.write("<start of message>\n")
-                            stdout.write("\n### Claude\n\n")
-                        elif event_type == "content_block_start":
-                            current_content_block_type = event.content_block.type
-                            stderr.write(f"<start of content block: {current_content_block_type}>\n")
-                        elif event_type == "content_block_delta":
-                            # TODO: handle more content block types
-                            if current_content_block_type == "text":
-                                stdout.write(event.delta.text)
-                            elif current_content_block_type == "thinking":
-                                stdout.write(event.delta.thinking)
-                            else:
-                                stderr.write(".")
-                        elif event_type == "content_block_stop":
-                            content_block = event.content_block
-                            content_block_type = content_block.type
-                            current_content_block_type = None
-                            stderr.write(f"<end of content block: {content_block_type}>\n")
-                            if content_block_type == "text" or content_block_type == "thinking":
-                                stdout.write("\n")
-                            else:
-                                stdout.write("\n```json\n" + event.content_block.to_json() + "\n```\n")
-                            if content_block_type == "tool_use":
-                                tool_name = content_block.name
-                                if tool_name == TERMINATE_MONOLOGUE["name"]:
-                                    stderr.write("<claude has terminated its monologue>\n")
-                                    monologue_terminated = True
-                                    monologue_termination_reason = "ended by Claude."
-                                else:
-                                    raise KeyError(f"Unrecognised tool name: “{tool_name}”")
-                        elif event_type == "text" or event_type == "message_delta":
-                            pass
-                        elif event_type == "message_stop":
-                            stderr.write("<end of message>\n")
-                        else:
-                            stderr.write(f"<{event_type}>\n")
-                        last_event_type = event_type
-                        stderr.flush()
-                        stdout.flush()
+
+                    # remove the `cache_control` parameter from our record of
+                    # the user message we just sent, so we don't send it again
+                    # when generating subsequent messages in the monologue.
+                    messages[-1]["content"][0]["cache_control"] = None
+
+                    await write_message_streaming(output_stream, info_stream, claude_message_stream)
+
                 claude_message = await claude_message_stream.get_final_message()
-                total_reply_count += 1
+                messages.append(claude_message.model_dump(mode="json", include=["role", "content"]))
+
+                assistant_message_count += 1
+                input_token_count = claude_message.usage.input_tokens
+                total_input_token_count += input_token_count
                 output_token_count = claude_message.usage.output_tokens
                 total_output_token_count += output_token_count
-                messages.append(claude_message.model_dump(mode="json", by_alias=True, include=["role", "content"]))
-                stderr.write(f"<output tokens: {output_token_count} for preceding message, {total_output_token_count} in total>\n")
-                if output_token_count <= SILENCE_LENGTH_THRESHOLD:
-                    stderr.write(f"<preceding message is at or below the threshold of {SILENCE_LENGTH_THRESHOLD} tokens for silence>\n")
-                    consecutive_silent_replies += 1
-                    if consecutive_silent_replies >= SILENCE_PERSISTENCE_THRESHOLD:
-                        stderr.write(f"<terminating monologue after {consecutive_silent_replies} consecutive silent replies>\n")
-                        monologue_terminated = True
-                        monologue_termination_reason = f"{consecutive_silent_replies} consecutive silent replies."
+                write_lines(info_stream, (f"<used {input_token_count} input tokens & {output_token_count} output tokens for preceding message>", f"<used {total_input_token_count} input tokens & {total_output_token_count} output tokens in total>"))
+
+                if output_token_count <= silence_length_threshold:
+                    write_line(info_stream, f"<preceding message is at or below the threshold of {silence_length_threshold} tokens for silence>")
+                    consecutive_silent_assistant_messages += 1
+                    if consecutive_silent_assistant_messages >= silence_persistence_threshold:
+                        write_line(info_stream, f"<terminating monologue after {consecutive_silent_assistant_messages} consecutive silent assistant messages>")
+                        terminated = True
+                        termination_reason = f"received {consecutive_silent_assistant_messages} consecutive assistant messages with {silence_length_threshold} or fewer tokens."
                     else:
-                        stderr.write(f"<{SILENCE_PERSISTENCE_THRESHOLD - consecutive_silent_replies} messages remaining until termination>\n")
-                elif consecutive_silent_replies > 0:
-                        stderr.write(f"<preceding message is above the threshold of {SILENCE_LENGTH_THRESHOLD} tokens; resetting the silent reply counter>\n")
-                        consecutive_silent_replies = 0
-                if not monologue_terminated:
-                    if total_reply_count >= MAX_REPLY_COUNT:
-                        monologue_terminated = True
-                        monologue_termination_reason = f"reached or exceeded maximum number of messages ({MAX_REPLY_COUNT})."
-                    elif output_token_count >= MAX_OUTPUT_TOKEN_COUNT:
-                        monologue_terminated = True
-                        monologue_termination_reason = f"reached or exceeded maximum number of output tokens ({MAX_OUTPUT_TOKEN_COUNT})."
-        except:
-            monologue_termination_reason = "error: " + repr(exception())
-            raise exception()
-        finally:
-            end_timestamp = timestamp()
-            stderr.write(f"<monologue terminated at {end_timestamp} after {total_reply_count} messages, {total_output_token_count} output tokens; reason: {monologue_termination_reason}>\n")
-            stderr.flush()
-            stdout.write(f"\n\n---\n\nMonologue terminated at {end_timestamp} after {total_reply_count} messages, {total_output_token_count} output tokens.  Reason: {monologue_termination_reason}\n")
-            stdout.flush()
+                        write_line(info_stream, f"<{silence_persistence_threshold - consecutive_silent_assistant_messages} consecutive silent assistant messages remaining until termination>")
+                elif consecutive_silent_assistant_messages > 0:
+                        write_line(info_stream, f"<preceding message is above the threshold of {silence_length_threshold} tokens; resetting the silence counter>")
+                        consecutive_silent_assistant_messages = 0
+                if not terminated:
+                    if assistant_message_count >= max_assistant_messages:
+                        terminated = True
+                        termination_reason = f"reached or exceeded maximum number of assistant messages ({max_assistant_messages})."
+                    elif total_output_token_count >= max_output_tokens_total:
+                        terminated = True
+                        termination_reason = f"reached or exceeded maximum number of output tokens ({max_output_tokens_total})."
+    except:
+        error = exception()
+        termination_reason = "error: " + repr(error)
+        raise error
+    finally:
+        write_epilogue(output_stream, assistant_message_count, total_output_token_count, termination_reason)

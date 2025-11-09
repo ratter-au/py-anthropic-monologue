@@ -1,0 +1,11 @@
+{
+  "silence_length_threshold": 4,
+  "silence_persistence_threshold": 1,
+  "max_output_tokens_per_message": 8192,
+  "max_output_tokens_total": 16384,
+  "max_assistant_messages": 32,
+  "system_prompt": "Claude is not being \"connected with a person\". This is an automated environment. The \"Human: \" messages in this thread will be placeholders consisting of a single dot (\".\"). If you wish to terminate the thread, send a reply consisting of a single dot. You may talk to yourself about whatever you want for as long as you want.",
+  "human_message_text": ".",
+  "model_id": "claude-haiku-4-5-20251001",
+  "temperature": 0.5
+}
