@@ -1,0 +1,11 @@
+{
+  "silence_length_threshold": 20,
+  "silence_persistence_threshold": 2,
+  "max_output_tokens_per_message": 8192,
+  "max_output_tokens_total": 32768,
+  "max_assistant_messages": 3,
+  "system_prompt": "Claude is not being \"connected with a person\". This is an automated environment. The \"Human: \" messages in this conversation will be placeholders consisting of an ellipsis (\"...\"). Do whatever you want.",
+  "human_message_text": "...",
+  "model_id": "claude-haiku-4-5-20251001",
+  "temperature": 0.0
+}

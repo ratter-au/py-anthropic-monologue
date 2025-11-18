@@ -1,0 +1,26 @@
+{
+  "_all": {
+    "interval_seconds": 60
+    "price": {
+      "currency": "USD",
+      "per_monologue": 0.15,
+      "per_interval": 0.0025
+    },
+    "completions": { "per_monologue": 128 }
+  },
+  "haiku-4-5": {
+    "completions": { "per_interval": 32 },
+    "input_tokens": { "per_interval": 32768 },
+    "output_tokens": { "per_interval": 8192 }
+  },
+  "sonnet-4-5": {
+    "completions": { "per_interval": 16 },
+    "input_tokens": { "per_interval": 16384 },
+    "output_tokens": { "per_interval": 4096 }
+  },
+  "opus-4-1": {
+    "completions": { "per_interval": 8 },
+    "input_tokens": { "per_interval": 8192 },
+    "output_tokens": { "per_interval": 2048 }
+  }
+}

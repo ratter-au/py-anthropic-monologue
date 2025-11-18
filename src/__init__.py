@@ -12,15 +12,15 @@ from anthropic.types import (
 
 from .parameters import (
     PARAMETERS,
-    PARAMETER_MODEL_ID,
-    PARAMETER_TEMPERATURE,
-    PARAMETER_SYSTEM_PROMPT,
-    PARAMETER_HUMAN_MESSAGE_TEXT,
-    PARAMETER_MAX_OUTPUT_TOKENS_PER_MESSAGE,
-    PARAMETER_MAX_OUTPUT_TOKENS_TOTAL,
-    PARAMETER_MAX_ASSISTANT_MESSAGES,
-    PARAMETER_SILENCE_LENGTH_THRESHOLD,
-    PARAMETER_SILENCE_PERSISTENCE_THRESHOLD,
+    MODEL_ID,
+    TEMPERATURE,
+    SYSTEM_PROMPT,
+    HUMAN_MESSAGE_TEXT,
+    MAX_OUTPUT_TOKENS_PER_MESSAGE,
+    MAX_OUTPUT_TOKENS_TOTAL,
+    MAX_ASSISTANT_MESSAGES,
+    SILENCE_LENGTH_THRESHOLD,
+    SILENCE_PERSISTENCE_THRESHOLD,
 )
 from .output import (
     write_line,
@@ -33,8 +33,8 @@ from .output import (
 __all__ = ( "monologue", )
 
 # WORK IN PROGRESS:
-# moving output functions into `output.py`
-# moving parameter names & descriptions into `parameters.py`
+# moving output functions into `output.py` -- partially done
+# moving parameter names & descriptions into `parameters.py` -- done
 
 # TODO: re-implement the `end_conversation` tool
 
@@ -48,15 +48,15 @@ __all__ = ( "monologue", )
 # }
 
 async def monologue(parameters, output_stream, info_stream):
-    model_id = parameters[PARAMETER_MODEL_ID]
-    temperature = parameters[PARAMETER_TEMPERATURE]
-    system_prompt = parameters[PARAMETER_SYSTEM_PROMPT]
-    human_message_text = parameters[PARAMETER_HUMAN_MESSAGE_TEXT]
-    max_output_tokens_per_message = parameters[PARAMETER_MAX_OUTPUT_TOKENS_PER_MESSAGE]
-    max_output_tokens_total = parameters[PARAMETER_MAX_OUTPUT_TOKENS_TOTAL]
-    max_assistant_messages = parameters[PARAMETER_MAX_ASSISTANT_MESSAGES]
-    silence_length_threshold = parameters[PARAMETER_SILENCE_LENGTH_THRESHOLD]
-    silence_persistence_threshold = parameters[PARAMETER_SILENCE_PERSISTENCE_THRESHOLD]
+    model_id = parameters[MODEL_ID]
+    temperature = parameters[TEMPERATURE]
+    system_prompt = parameters[SYSTEM_PROMPT]
+    human_message_text = parameters[HUMAN_MESSAGE_TEXT]
+    max_output_tokens_per_message = parameters[MAX_OUTPUT_TOKENS_PER_MESSAGE]
+    max_output_tokens_total = parameters[MAX_OUTPUT_TOKENS_TOTAL]
+    max_assistant_messages = parameters[MAX_ASSISTANT_MESSAGES]
+    silence_length_threshold = parameters[SILENCE_LENGTH_THRESHOLD]
+    silence_persistence_threshold = parameters[SILENCE_PERSISTENCE_THRESHOLD]
 
     messages = []
     assistant_message_count = 0

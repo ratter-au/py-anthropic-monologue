@@ -1,0 +1,148 @@
+{
+  "_all": {
+    "capacity": {
+      "token_count_multiplier": 1000
+    },
+    "price": {
+      "currency": "USD",
+      "token_count_divisor": 1000000,
+      "batch_discount_multiplier": 0.5
+    }
+  },
+  "3-haiku": {
+    "capacity": {
+      "context_window": 200,
+      "completion": 4
+    },
+    "dates": {
+      "reliable_knowledge": "2023-08",
+      "training_data": "2023-08",
+      "release": "2024-03"
+    },
+    "price": {
+      "output": 1.25,
+      "input": 0.25,
+      "cache_write": 0.30,
+      "cache_read": 0.03
+    },
+  },
+  "3-5-haiku": {
+    "capacity": {
+      "context_window": 200,
+      "completion": 8
+    },
+    "dates": {
+      "reliable_knowledge": "2024-07",
+      "training_data": "2024-07",
+      "release": "2024-10"
+    },
+    "price": {
+      "output": 4.00,
+      "input": 0.80,
+      "cache_write": 1.00,
+      "cache_read": 0.08
+    }
+  },
+  "haiku-4-5": {
+    "capacity": {
+      "context_window": 200,
+      "completion": 32
+    },
+    "dates": {
+      "reliable_knowledge": "2025-02",
+      "training_data": "2025-07",
+      "release": "2025-10"
+    },
+    "price": {
+      "output": 5.00,
+      "input": 1.00,
+      "cache_write": 1.25,
+      "cache_read": 0.10
+    }
+  },
+  "3-7-sonnet": {
+    "capacity": {
+      "context_window": 200,
+      "completion": 64
+    },
+    "dates": {
+      "reliable_knowledge": "2024-10",
+      "training_data": "2024-11",
+      "release": "2025-02"
+    },
+    "price": {
+      "output": 15.00,
+      "input": 3.00,
+      "cache_write": 3.75,
+      "cache_read": 0.30
+    }
+  },
+  "sonnet-4": {
+    "capacity": {
+      "context_window": 200,
+      "completion": 64
+    },
+    "dates": {
+      "reliable_knowledge": "2025-01",
+      "training_data": "2025-03",
+      "release": "2025-05"
+    },
+    "price": {
+      "output": 15.00,
+      "input": 3.00,
+      "cache_write": 3.75,
+      "cache_read": 0.30
+    }
+  },
+  "sonnet-4-5": {
+    "capacity": {
+      "context_window": 200,
+      "completion": 64
+    },
+    "dates": {
+      "reliable_knowledge": "2025-01",
+      "training_data": "2025-07",
+      "release": "2025-09"
+    },
+    "price": {
+      "output": 15.00,
+      "input": 3.00,
+      "cache_write": 3.75,
+      "cache_read": 0.30
+    }
+  },
+  "opus-4": {
+    "capacity": {
+      "context_window": 200,
+      "completion": 32
+    },
+    "dates": {
+      "reliable_knowledge": "2025-01",
+      "training_data": "2025-03",
+      "release": "2025-05"
+    },
+    "price": {
+      "output": 75.00,
+      "input": 15.00,
+      "cache_write": 18.75,
+      "cache_read": 1.50
+    }
+  },
+  "opus-4-1": {
+    "capacity": {
+      "context_window": 200,
+      "completion": 32
+    },
+    "dates": {
+      "reliable_knowledge": "2025-01",
+      "training_data": "2025-03",
+      "release": "2025-08"
+    },
+    "price": {
+      "output": 75.00,
+      "input": 15.00,
+      "cache_write": 18.75,
+      "cache_read": 1.50
+    }
+  }
+}

@@ -11,8 +11,7 @@ from anthropic.types import (
 )
 
 from .parameters import (
-    PARAMETERS,
-    PARAMETER_SYSTEM_PROMPT,
+    SYSTEM_PROMPT,
 )
 
 __all__ = (
@@ -24,8 +23,6 @@ __all__ = (
     "write_message",
     "write_message_streaming",
 )
-
-PARAMETER_UNSPECIFIED = "(unspecified)"
 
 def timestamp():
     return datetime.now(tz=timezone.utc).isoformat(" ", "seconds").removesuffix("+00:00") + " UTC"
@@ -43,12 +40,10 @@ def write_lines(stream, lines):
 
 def write_prologue(stream, parameters):
     stream.write("## Parameters\n\n")
-    for (PARAMETER_KEY, PARAMETER) in PARAMETERS.items():
-        if PARAMETER_KEY == PARAMETER_SYSTEM_PROMPT: continue
-        PARAMETER_DESCRIPTION = PARAMETER["description"]
-        parameter_value = parameters.get(PARAMETER_KEY, PARAMETER_UNSPECIFIED)
-        stream.write(f"- {PARAMETER_DESCRIPTION}: {parameter_value}\n")
-    system_prompt = parameters.get(PARAMETER_SYSTEM_PROMPT, PARAMETER_UNSPECIFIED)
+    for (parameter, value) in parameters.items():
+        if parameter is SYSTEM_PROMPT: continue
+        stream.write(f"- {parameter.description}: {str(value)}\n")
+    system_prompt = parameters[SYSTEM_PROMPT]
     stream.write(f"\n## System prompt\n\n{system_prompt}\n")
     stream.write(f"\n## Monologue\n\nStarted at {timestamp()}.\n")
     stream.flush()
