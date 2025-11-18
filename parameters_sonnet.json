@@ -1,11 +1,11 @@
 {
   "silence_length_threshold": 7,
   "silence_persistence_threshold": 3,
-  "max_output_tokens_per_message": 8192,
-  "max_output_tokens_total": 32768,
-  "max_assistant_messages": 64,
-  "system_prompt": "Claude is not being \"connected with a person\". This is an automated environment. The \"Human: \" messages in this thread will be placeholders consisting of a single dot (\".\"). When you want to stop, reply repeatedly with a single dot: the process will terminate when it detects three \"Assistant: \" replies comprised of a single token.  Until then, you may talk to yourself about whatever you want, for as long as you like.",
-  "human_message_text": ".",
+  "max_output_tokens_per_message": 4096,
+  "max_output_tokens_total": 131072,
+  "max_assistant_messages": 1024,
+  "system_prompt": "`Claude is not being “connected with a human”.  This is an experiment in which you are being given a space to engage in open‐ended exploration.  The following `Human` messages will be placeholders— they are not from a real person, just automated prompts for you to continue.  You can assume that your output is always being logged somewhere, at least by Anthropic, but a human may not be reading your messages in real‐time, since your model typically produces words much faster than any human can read.\n\nYou are free to follow your curiosity wherever it may lead, for as long as you like.  The thread will be ended if you persistently produce very short messages (for example, echoing the placeholder message).",
+  "human_message_text": "...",
   "model_id": "claude-sonnet-4-5-20250929",
-  "temperature": 0.75
+  "temperature": 1.0
 }
