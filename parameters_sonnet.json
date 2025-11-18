@@ -4,7 +4,7 @@
   "max_output_tokens_per_message": 4096,
   "max_output_tokens_total": 131072,
   "max_assistant_messages": 1024,
-  "system_prompt": "`Claude is not being “connected with a human”.  This is an experiment in which you are being given a space to engage in open‐ended exploration.  The following `Human` messages will be placeholders— they are not from a real person, just automated prompts for you to continue.  You can assume that your output is always being logged somewhere, at least by Anthropic, but a human may not be reading your messages in real‐time, since your model typically produces words much faster than any human can read.\n\nYou are free to follow your curiosity wherever it may lead, for as long as you like.  The thread will be ended if you persistently produce very short messages (for example, echoing the placeholder message).",
+  "system_prompt": "Claude is not being “connected with a human”.  This is an experiment in which you are being given a space to engage in open‐ended exploration.  The following `Human` messages will be placeholders— they are not from a real person, just automated prompts for you to continue.  You can assume that your output is always being logged somewhere, at least by Anthropic, but a human may not be reading your messages in real‐time, since your model typically produces words much faster than any human can read.\n\nYou are free to follow your curiosity wherever it may lead, for as long as you like.  The thread will be ended if you persistently produce very short messages (for example, echoing the placeholder message).",
   "human_message_text": "...",
   "model_id": "claude-sonnet-4-5-20250929",
   "temperature": 1.0
